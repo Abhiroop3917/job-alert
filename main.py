@@ -196,24 +196,22 @@ def notify(job):
         print(f"    ntfy failed: {e}")
 
 
-def notify_email(job):
-    if not config.GMAIL_ADDRESS or not config.GMAIL_APP_PASSWORD:
+def notify_email_digest(new_jobs):
+    if not config.GMAIL_ADDRESS or not config.GMAIL_APP_PASSWORD or not new_jobs:
         return
-    source   = job.get('source', 'Job')
-    location = job.get('location', '')
-    posted   = job.get('posted', '')
-    url      = job.get('url', '')
 
-    body = f"{job['title']}\n"
-    if location:
-        body += f"Location: {location}\n"
-    if posted:
-        body += f"Posted: {posted}\n"
-    if url:
-        body += f"\nApply: {url}"
+    lines = []
+    for job in new_jobs:
+        lines.append(f"[{job.get('source')}] {job['title']}")
+        if job.get('location'):
+            lines.append(f"  Location: {job['location']}")
+        if job.get('url'):
+            lines.append(f"  Apply: {job['url']}")
+        lines.append("")
 
+    body = "\n".join(lines)
     msg = MIMEText(body)
-    msg['Subject'] = f"New {source} Job: {job['title']}"
+    msg['Subject'] = f"Job Alert: {len(new_jobs)} new job(s) found"
     msg['From']    = config.GMAIL_ADDRESS
     msg['To']      = config.GMAIL_ADDRESS
 
@@ -222,6 +220,7 @@ def notify_email(job):
             s.starttls()
             s.login(config.GMAIL_ADDRESS, config.GMAIL_APP_PASSWORD)
             s.send_message(msg)
+        print(f"  Email digest sent: {len(new_jobs)} jobs")
     except Exception as e:
         print(f"    email failed: {e}")
 
@@ -249,9 +248,10 @@ def main():
     for job in new_jobs:
         print(f"  NEW [{job.get('source')}] {job['title']} — {job.get('location')}")
         notify(job)
-        notify_email(job)
         seen.add(job['id'])
         time.sleep(0.3)
+
+    notify_email_digest(new_jobs)
 
     save_seen(seen)
     print(f"\nDone. Seen IDs saved: {len(seen)}")
