@@ -2,7 +2,9 @@ import os
 
 # ntfy.sh topic — set this as a GitHub Secret named NTFY_TOPIC
 # Never hardcode it here if the repo is public
-NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "")
+NTFY_TOPIC         = os.environ.get("NTFY_TOPIC", "")
+GMAIL_ADDRESS      = os.environ.get("GMAIL_ADDRESS", "")
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
 # Keywords to match (case-insensitive substring match on job title)
 # Empty list = match all jobs

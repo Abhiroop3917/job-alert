@@ -3,8 +3,10 @@
 
 import json
 import re
+import smtplib
 import sys
 import time
+from email.mime.text import MIMEText
 from pathlib import Path
 
 import requests
@@ -194,6 +196,36 @@ def notify(job):
         print(f"    ntfy failed: {e}")
 
 
+def notify_email(job):
+    if not config.GMAIL_ADDRESS or not config.GMAIL_APP_PASSWORD:
+        return
+    source   = job.get('source', 'Job')
+    location = job.get('location', '')
+    posted   = job.get('posted', '')
+    url      = job.get('url', '')
+
+    body = f"{job['title']}\n"
+    if location:
+        body += f"Location: {location}\n"
+    if posted:
+        body += f"Posted: {posted}\n"
+    if url:
+        body += f"\nApply: {url}"
+
+    msg = MIMEText(body)
+    msg['Subject'] = f"New {source} Job: {job['title']}"
+    msg['From']    = config.GMAIL_ADDRESS
+    msg['To']      = config.GMAIL_ADDRESS
+
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587) as s:
+            s.starttls()
+            s.login(config.GMAIL_ADDRESS, config.GMAIL_APP_PASSWORD)
+            s.send_message(msg)
+    except Exception as e:
+        print(f"    email failed: {e}")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -217,6 +249,7 @@ def main():
     for job in new_jobs:
         print(f"  NEW [{job.get('source')}] {job['title']} — {job.get('location')}")
         notify(job)
+        notify_email(job)
         seen.add(job['id'])
         time.sleep(0.3)
 
