@@ -204,8 +204,7 @@ def main():
         sys.exit(1)
 
     print("=== Job Monitor ===")
-    seen         = load_seen()
-    is_first_run = len(seen) == 0
+    seen = load_seen()
     print(f"Seen IDs loaded: {len(seen)}")
 
     print("\nFetching jobs...")
@@ -213,18 +212,13 @@ def main():
     matching  = apply_filters(all_jobs)
     print(f"\nMatching: {len(matching)} of {len(all_jobs)} total")
 
-    if is_first_run:
-        print("First run — seeding existing jobs silently (no notifications).")
-        for job in matching:
-            seen.add(job['id'])
-    else:
-        new_jobs = [j for j in matching if j['id'] not in seen]
-        print(f"New jobs: {len(new_jobs)}")
-        for job in new_jobs:
-            print(f"  NEW [{job.get('source')}] {job['title']} — {job.get('location')}")
-            notify(job)
-            seen.add(job['id'])
-            time.sleep(0.3)
+    new_jobs = [j for j in matching if j['id'] not in seen]
+    print(f"New jobs: {len(new_jobs)}")
+    for job in new_jobs:
+        print(f"  NEW [{job.get('source')}] {job['title']} — {job.get('location')}")
+        notify(job)
+        seen.add(job['id'])
+        time.sleep(0.3)
 
     save_seen(seen)
     print(f"\nDone. Seen IDs saved: {len(seen)}")
