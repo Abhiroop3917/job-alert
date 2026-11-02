@@ -18,7 +18,7 @@ APPLE_URL     = "https://jobs.apple.com/en-in/search?sort=newest&location=india-
 DELOITTE_URL  = "https://southasiacareers.deloitte.com/search/?q=&title=Developer&sortColumn=referencedate&sortDirection=desc&searchby=location"
 IBM_ENABLED   = True
 AMAZON_URL    = (
-    "https://amazon.jobs/en/search.json?offset=0&result_limit=100&sort=recent"
+    "https://amazon.jobs/en/search.json?result_limit=100&sort=recent"
     "&category[]=software-development&category[]=data-science"
     "&category[]=machine-learning-science&category[]=systems-quality-security-engineering"
     "&category[]=operations-it-support-engineering&category[]=business-merchant-development"

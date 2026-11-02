@@ -121,16 +121,12 @@ def fetch_ibm_jobs():
 
 
 def fetch_amazon_jobs():
-    import re as _re
-    base = _re.sub(r'[?&]offset=\d+', '', config.AMAZON_URL).rstrip('?&')
-    sep  = '&' if '?' in base else '?'
     all_jobs, seen_ids = [], set()
 
     for offset in range(0, 1000, 100):
         try:
-            data = _get(f'{base}{sep}offset={offset}')
             import json as _json
-            jobs = parse_amazon_jobs(_json.loads(data))
+            jobs = parse_amazon_jobs(_json.loads(_get(f'{config.AMAZON_URL}&offset={offset}')))
             if not jobs:
                 break
             for job in jobs:
