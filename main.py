@@ -269,18 +269,32 @@ def main():
 
     new_jobs = [j for j in matching if j['id'] not in seen]
     print(f"New jobs: {len(new_jobs)}")
+
+    # When a new source is added for the first time it floods hundreds of jobs.
+    # Seed all as seen but only notify about the 5 most recent as a preview.
+    BULK_THRESHOLD = 20
+    PREVIEW_COUNT  = 5
+    if len(new_jobs) > BULK_THRESHOLD:
+        print(f"  Bulk seed detected ({len(new_jobs)} new) — notifying latest {PREVIEW_COUNT} only")
+        notify_jobs = new_jobs[:PREVIEW_COUNT]
+    else:
+        notify_jobs = new_jobs
+
     ntfy_limit = 10  # cap push notifications per run to avoid rate limiting
-    for i, job in enumerate(new_jobs):
+    for i, job in enumerate(notify_jobs):
         print(f"  NEW [{job.get('source')}] {job['title']} — {job.get('location')}")
         if i < ntfy_limit:
             notify(job)
             time.sleep(0.3)
-        seen.add(job['id'])
 
-    if len(new_jobs) > ntfy_limit:
+    if len(notify_jobs) > ntfy_limit:
         print(f"  (ntfy capped at {ntfy_limit}; full list in email digest)")
 
-    notify_email_digest(new_jobs)
+    # Always mark ALL new jobs as seen (prevents re-flood on next run)
+    for job in new_jobs:
+        seen.add(job['id'])
+
+    notify_email_digest(notify_jobs)
 
     save_seen(seen)
     print(f"\nDone. Seen IDs saved: {len(seen)}")
