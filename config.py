@@ -20,6 +20,7 @@ IBM_ENABLED   = True
 AMAZON_URL    = (
     "https://amazon.jobs/en/search.json?result_limit=100&sort=recent"
     "&category[]=software-development&category[]=data-science"
+    "&category[]=fulfillment-warehouse-associate"
     "&category[]=machine-learning-science&category[]=systems-quality-security-engineering"
     "&category[]=operations-it-support-engineering&category[]=business-merchant-development"
     "&category[]=project-program-product-management-technical&category[]=business-intelligence"
