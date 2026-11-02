@@ -144,6 +144,9 @@ def fetch_amazon_jobs():
             break
 
     return all_jobs
+
+
+def fetch_all_jobs():
     sources = [
         ("Google",     lambda: fetch_all_pages(config.GOOGLE_URL, parse_google_jobs)),
         ("ServiceNow", lambda: parse_servicenow_jobs(_get(config.SERVICENOW_URL))),
