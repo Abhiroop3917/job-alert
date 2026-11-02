@@ -19,6 +19,11 @@ KEYWORDS = [
     "Backend",
     "Cloud",
     "Data",
+    "Engineer",
+    "Developer",
+    "Java",
+    "Consultant",
+    "Analyst",
 ]
 
 # Location filter (case-insensitive substring match)
