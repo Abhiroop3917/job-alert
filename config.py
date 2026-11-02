@@ -8,26 +8,8 @@ GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
 # Keywords to match (case-insensitive substring match on job title)
 # Empty list = match all jobs
-KEYWORDS = [
-    "Software Engineer",
-    "Software Engineering",
-    "Machine Learning",
-    "AI",
-    "Artificial Intelligence",
-    "Generative AI",
-    "Python",
-    "Backend",
-    "Cloud",
-    "Data",
-    "Engineer",
-    "Developer",
-    "Java",
-    "Consultant",
-    "Analyst",
-]
-
-# Location filter (case-insensitive substring match)
-LOCATIONS = ["India"]
+KEYWORDS  = []  # URLs already handle filtering
+LOCATIONS = []  # URLs already handle filtering
 
 # Job source URLs
 GOOGLE_URL    = "https://www.google.com/about/careers/applications/jobs/results?target_level=EARLY&employment_type=FULL_TIME&sort_by=date&location=India"
