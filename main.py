@@ -245,11 +245,16 @@ def main():
 
     new_jobs = [j for j in matching if j['id'] not in seen]
     print(f"New jobs: {len(new_jobs)}")
-    for job in new_jobs:
+    ntfy_limit = 10  # cap push notifications per run to avoid rate limiting
+    for i, job in enumerate(new_jobs):
         print(f"  NEW [{job.get('source')}] {job['title']} — {job.get('location')}")
-        notify(job)
+        if i < ntfy_limit:
+            notify(job)
+            time.sleep(0.3)
         seen.add(job['id'])
-        time.sleep(0.3)
+
+    if len(new_jobs) > ntfy_limit:
+        print(f"  (ntfy capped at {ntfy_limit}; full list in email digest)")
 
     notify_email_digest(new_jobs)
 
