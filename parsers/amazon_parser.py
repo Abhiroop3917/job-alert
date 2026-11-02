@@ -8,12 +8,22 @@ _YEAR_RE = re.compile(r'(\d+)\+?\s*(?:to\s*\d+\s*)?years?', re.IGNORECASE)
 _MAX_YEARS = 2
 
 
-def _is_entry_level(basic_qualifications):
-    bq = re.sub(r'<[^>]+>', ' ', basic_qualifications or '')
-    years = [int(n) for n in _YEAR_RE.findall(bq)]
-    if not years:
-        return True
-    return max(years) <= _MAX_YEARS
+def _max_years_in_text(text):
+    """Return the highest year number found in text, or 0 if none found."""
+    cleaned = re.sub(r'<[^>]+>', ' ', text or '')
+    nums = [int(n) for n in _YEAR_RE.findall(cleaned)]
+    return max(nums) if nums else 0
+
+
+def _is_entry_level(basic_qualifications, description):
+    """True if both basic_qualifications and description pass the year threshold."""
+    bq_max   = _max_years_in_text(basic_qualifications)
+    desc_max = _max_years_in_text(description)
+    # Use whichever field is stricter (higher year requirement)
+    max_req = max(bq_max, desc_max)
+    if max_req == 0:
+        return True   # no year requirement found in either field → include
+    return max_req <= _MAX_YEARS
 
 
 def parse_amazon_jobs(data):
@@ -22,7 +32,7 @@ def parse_amazon_jobs(data):
         jid = str(j.get('id_icims', ''))
         if not jid:
             continue
-        if not _is_entry_level(j.get('basic_qualifications', '')):
+        if not _is_entry_level(j.get('basic_qualifications', ''), j.get('description', '')):
             continue
         jobs.append({
             'id':       f'amazon-{jid}',
