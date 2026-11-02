@@ -17,3 +17,11 @@ SERVICENOW_URL = "https://careers.servicenow.com/jobs/xml/?rss=true"
 APPLE_URL     = "https://jobs.apple.com/en-in/search?sort=newest&location=india-INDC&key=Ai&lang=english-us-en_US"
 DELOITTE_URL  = "https://southasiacareers.deloitte.com/search/?q=&title=Developer&sortColumn=referencedate&sortDirection=desc&searchby=location"
 IBM_ENABLED   = True
+AMAZON_URL    = (
+    "https://amazon.jobs/en/search.json?offset=0&result_limit=100&sort=recent"
+    "&category[]=software-development&category[]=data-science"
+    "&category[]=machine-learning-science&category[]=systems-quality-security-engineering"
+    "&category[]=operations-it-support-engineering&category[]=business-merchant-development"
+    "&category[]=project-program-product-management-technical&category[]=business-intelligence"
+    "&industry_experience=less_than_1_year&country=IND"
+)

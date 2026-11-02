@@ -17,6 +17,7 @@ from parsers.servicenow_parser import parse_servicenow_jobs
 from parsers.apple_parser import parse_apple_jobs
 from parsers.deloitte_parser import parse_deloitte_jobs
 from parsers.ibm_parser import parse_ibm_jobs
+from parsers.amazon_parser import parse_amazon_jobs
 
 SEEN_FILE = Path("seen_jobs.json")
 HEADERS = {
@@ -119,7 +120,30 @@ def fetch_ibm_jobs():
     return all_jobs
 
 
-def fetch_all_jobs():
+def fetch_amazon_jobs():
+    import re as _re
+    base = _re.sub(r'[?&]offset=\d+', '', config.AMAZON_URL).rstrip('?&')
+    sep  = '&' if '?' in base else '?'
+    all_jobs, seen_ids = [], set()
+
+    for offset in range(0, 1000, 100):
+        try:
+            data = _get(f'{base}{sep}offset={offset}')
+            import json as _json
+            jobs = parse_amazon_jobs(_json.loads(data))
+            if not jobs:
+                break
+            for job in jobs:
+                if job['id'] not in seen_ids:
+                    seen_ids.add(job['id'])
+                    all_jobs.append(job)
+            if len(jobs) < 100:
+                break
+        except Exception as e:
+            print(f"    Amazon offset {offset} error: {e}")
+            break
+
+    return all_jobs
     sources = [
         ("Google",     lambda: fetch_all_pages(config.GOOGLE_URL, parse_google_jobs)),
         ("ServiceNow", lambda: parse_servicenow_jobs(_get(config.SERVICENOW_URL))),
@@ -129,6 +153,7 @@ def fetch_all_jobs():
             page_param="startrow", page_start=0, page_step=25,
         )),
         ("IBM",        fetch_ibm_jobs),
+        ("Amazon",     fetch_amazon_jobs),
     ]
 
     results = []
