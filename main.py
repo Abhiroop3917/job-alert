@@ -19,7 +19,9 @@ from parsers.deloitte_parser import parse_deloitte_jobs
 from parsers.ibm_parser import parse_ibm_jobs
 from parsers.amazon_parser import parse_amazon_jobs
 
-SEEN_FILE = Path("seen_jobs.json")
+SEEN_FILE     = Path("seen_jobs.json")
+BULK_THRESHOLD = 20   # if more new jobs than this, only notify a preview
+PREVIEW_COUNT  = 5    # how many to notify during a bulk seed
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
     "Accept-Language": "en-US,en;q=0.9",
@@ -272,8 +274,6 @@ def main():
 
     # When a new source is added for the first time it floods hundreds of jobs.
     # Seed all as seen but only notify about the 5 most recent as a preview.
-    BULK_THRESHOLD = 20
-    PREVIEW_COUNT  = 5
     if len(new_jobs) > BULK_THRESHOLD:
         print(f"  Bulk seed detected ({len(new_jobs)} new) — notifying latest {PREVIEW_COUNT} only")
         notify_jobs = new_jobs[:PREVIEW_COUNT]

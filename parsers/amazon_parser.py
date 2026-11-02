@@ -1,31 +1,32 @@
 import re
 
 # Amazon's JSON API ignores the industry_experience=less_than_1_year URL filter.
-# These title patterns identify senior/experienced roles to exclude.
-_SENIOR_RE = re.compile(
-    r'\b(sr|senior|manager|director|principal|lead|staff|head|vp|vice\s+president'
-    r'|sdm|sde\s*iii|sde\s*ii|ii|iii|iv)\b',
-    re.IGNORECASE,
-)
+# We filter by parsing the basic_qualifications text instead:
+#   - keep jobs where max year requirement <= 2 (SDE I / SDE II)
+#   - keep jobs with no year pattern at all (PhD/research roles with no year floor)
+_YEAR_RE = re.compile(r'(\d+)\+?\s*(?:to\s*\d+\s*)?years?', re.IGNORECASE)
+_MAX_YEARS = 2
 
 
-def _is_entry_level(title):
-    return not _SENIOR_RE.search(title)
+def _is_entry_level(basic_qualifications):
+    bq = re.sub(r'<[^>]+>', ' ', basic_qualifications or '')
+    years = [int(n) for n in _YEAR_RE.findall(bq)]
+    if not years:
+        return True
+    return max(years) <= _MAX_YEARS
 
 
 def parse_amazon_jobs(data):
-    """Parse Amazon Jobs JSON API response, keeping only entry-level roles."""
     jobs = []
     for j in data.get('jobs', []):
         jid = str(j.get('id_icims', ''))
         if not jid:
             continue
-        title = j.get('title', '').strip()
-        if not _is_entry_level(title):
+        if not _is_entry_level(j.get('basic_qualifications', '')):
             continue
         jobs.append({
             'id':       f'amazon-{jid}',
-            'title':    title,
+            'title':    j.get('title', '').strip(),
             'location': j.get('location', ''),
             'url':      f"https://amazon.jobs{j.get('job_path', '')}",
             'posted':   j.get('posted_date', ''),
