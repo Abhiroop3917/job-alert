@@ -6,6 +6,7 @@ import re
 import smtplib
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from email.mime.text import MIMEText
 from pathlib import Path
 
@@ -165,18 +166,15 @@ def fetch_apple_jobs():
             print(f"    Apple page {page} error: {e}")
             break
 
-    filtered = []
-    for job in all_jobs:
+    def _check(job):
         try:
-            detail_html = _get(job['url'])
-            qualifications = parse_apple_job_detail(detail_html)
-            if is_entry_level_experience(qualifications):
-                filtered.append(job)
-        except Exception as e:
-            print(f"    Apple detail fetch error ({job['id']}): {e}")
-            filtered.append(job)   # include on error — better to over-notify than miss
+            qualifications = parse_apple_job_detail(_get(job['url']))
+            return job if is_entry_level_experience(qualifications) else None
+        except Exception:
+            return job  # include on error
 
-    return filtered
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        return [j for j in ex.map(_check, all_jobs) if j]
 
 
 def fetch_deloitte_jobs():
@@ -197,18 +195,15 @@ def fetch_deloitte_jobs():
             print(f"    Deloitte startrow {startrow} error: {e}")
             break
 
-    filtered = []
-    for job in all_jobs:
+    def _check(job):
         try:
-            detail_html = _get(job['url'])
-            description = parse_deloitte_job_detail(detail_html)
-            if is_entry_level_experience(description):
-                filtered.append(job)
-        except Exception as e:
-            print(f"    Deloitte detail fetch error ({job['id']}): {e}")
-            filtered.append(job)   # include on error
+            description = parse_deloitte_job_detail(_get(job['url']))
+            return job if is_entry_level_experience(description) else None
+        except Exception:
+            return job  # include on error
 
-    return filtered
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        return [j for j in ex.map(_check, all_jobs) if j]
 
 
 def fetch_microsoft_jobs():
@@ -306,43 +301,42 @@ def fetch_meta_jobs():
     api_resp.raise_for_status()
     all_jobs = parse_meta_jobs(api_resp.json())
 
-    # Step 3: filter each job using its detail page qualifications text
-    filtered = []
-    for job in all_jobs:
+    # Step 3: filter each job using its detail page qualifications text — in parallel
+    def _check(job):
         try:
-            detail_html = _get(job['url'])
-            qualifications = parse_meta_job_detail(detail_html)
-            if is_entry_level_experience(qualifications):
-                filtered.append(job)
-        except Exception as e:
-            print(f"    Meta detail fetch error ({job['id']}): {e}")
-            filtered.append(job)  # include on error — better to over-notify than miss
+            qualifications = parse_meta_job_detail(_get(job['url']))
+            return job if is_entry_level_experience(qualifications) else None
+        except Exception:
+            return job  # include on error
 
-    return filtered
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        return [j for j in ex.map(_check, all_jobs) if j]
 
 
 def fetch_all_jobs():
-    sources = [
-        ("Google",     lambda: fetch_all_pages(config.GOOGLE_URL, parse_google_jobs)),
-        ("ServiceNow", lambda: parse_servicenow_jobs(_get(config.SERVICENOW_URL))),
-        ("Apple",      fetch_apple_jobs),
-        ("Deloitte",   fetch_deloitte_jobs),
-        ("IBM",        fetch_ibm_jobs),
-        ("Amazon",     fetch_amazon_jobs),
-        ("Microsoft",  fetch_microsoft_jobs),
-        ("Meta",       fetch_meta_jobs),
-    ]
+    sources = {
+        "Google":     lambda: fetch_all_pages(config.GOOGLE_URL, parse_google_jobs),
+        "ServiceNow": lambda: parse_servicenow_jobs(_get(config.SERVICENOW_URL)),
+        "Apple":      fetch_apple_jobs,
+        "Deloitte":   fetch_deloitte_jobs,
+        "IBM":        fetch_ibm_jobs,
+        "Amazon":     fetch_amazon_jobs,
+        "Microsoft":  fetch_microsoft_jobs,
+        "Meta":       fetch_meta_jobs,
+    }
 
-    results = []
-    for name, fn in sources:
-        print(f"  Fetching {name}...")
-        try:
-            jobs = fn()
-            print(f"    {len(jobs)} jobs found")
-            results.extend(jobs)
-        except Exception as e:
-            print(f"    {name} failed: {e}")
-    return results
+    all_jobs = []
+    with ThreadPoolExecutor(max_workers=len(sources)) as executor:
+        futures = {executor.submit(fn): name for name, fn in sources.items()}
+        for future in as_completed(futures):
+            name = futures[future]
+            try:
+                jobs = future.result()
+                print(f"  {name}: {len(jobs)} jobs found")
+                all_jobs.extend(jobs)
+            except Exception as e:
+                print(f"  {name} failed: {e}")
+    return all_jobs
 
 
 # ---------------------------------------------------------------------------
