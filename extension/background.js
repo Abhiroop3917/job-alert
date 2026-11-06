@@ -287,37 +287,37 @@ const APPLE_MIN_Q_RE = /"minimumQualifications":"((?:[^"\\]|\\[\s\S])*)"/;
 // Fetch Apple jobs across pages, then filter each by minimumQualifications on the detail page.
 async function fetchAppleJobs(baseUrl) {
   const allJobs = await fetchAllPages(baseUrl, parseAppleJobs);
-  const filtered = [];
-  for (const job of allJobs) {
-    try {
-      const detailHtml = await fetchResultsHtml(job.url);
-      const mq = detailHtml.match(APPLE_MIN_Q_RE);
-      let qualifications = "";
-      if (mq) {
-        qualifications = mq[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+  const checks = await Promise.all(
+    allJobs.map(async (job) => {
+      try {
+        const detailHtml = await fetchResultsHtml(job.url);
+        const mq = detailHtml.match(APPLE_MIN_Q_RE);
+        let qualifications = "";
+        if (mq) qualifications = mq[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+        return isEntryLevelExperience(qualifications) ? job : null;
+      } catch (_) {
+        return job; // include on fetch error
       }
-      if (isEntryLevelExperience(qualifications)) filtered.push(job);
-    } catch (_) {
-      filtered.push(job); // include on fetch error
-    }
-  }
-  return filtered;
+    })
+  );
+  return checks.filter(Boolean);
 }
 
 // Fetch Deloitte jobs across pages, then filter each by stripping the detail page and checking years.
 async function fetchDeloitteJobs(baseUrl) {
   const allJobs = await fetchAllPages(baseUrl, parseDeloitteJobs, { pageParam: "startrow", pageStart: 0, pageStep: 25 });
-  const filtered = [];
-  for (const job of allJobs) {
-    try {
-      const detailHtml = await fetchResultsHtml(job.url);
-      const description = detailHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
-      if (isEntryLevelExperience(description)) filtered.push(job);
-    } catch (_) {
-      filtered.push(job); // include on fetch error
-    }
-  }
-  return filtered;
+  const checks = await Promise.all(
+    allJobs.map(async (job) => {
+      try {
+        const detailHtml = await fetchResultsHtml(job.url);
+        const description = detailHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+        return isEntryLevelExperience(description) ? job : null;
+      } catch (_) {
+        return job; // include on fetch error
+      }
+    })
+  );
+  return checks.filter(Boolean);
 }
 
 // Fetch all jobs from every enabled source in parallel.
