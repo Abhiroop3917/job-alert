@@ -14,8 +14,9 @@ import requests
 import config
 from parsers.google_parser import parse_google_jobs
 from parsers.servicenow_parser import parse_servicenow_jobs
-from parsers.apple_parser import parse_apple_jobs
-from parsers.deloitte_parser import parse_deloitte_jobs
+from parsers.apple_parser import parse_apple_jobs, parse_apple_job_detail
+from parsers.deloitte_parser import parse_deloitte_jobs, parse_deloitte_job_detail
+from parsers.experience import is_entry_level_experience
 from parsers.ibm_parser import parse_ibm_jobs
 from parsers.amazon_parser import parse_amazon_jobs
 from parsers.microsoft_parser import parse_microsoft_jobs
@@ -145,6 +146,70 @@ def fetch_amazon_jobs():
     return all_jobs
 
 
+def fetch_apple_jobs():
+    all_jobs, seen_ids = [], set()
+
+    for page in range(1, 11):
+        try:
+            jobs = parse_apple_jobs(_get(f'{config.APPLE_URL}&page={page}'))
+            if not jobs:
+                break
+            for job in jobs:
+                if job['id'] not in seen_ids:
+                    seen_ids.add(job['id'])
+                    all_jobs.append(job)
+            if len(jobs) < 20:
+                break
+        except Exception as e:
+            print(f"    Apple page {page} error: {e}")
+            break
+
+    filtered = []
+    for job in all_jobs:
+        try:
+            detail_html = _get(job['url'])
+            qualifications = parse_apple_job_detail(detail_html)
+            if is_entry_level_experience(qualifications):
+                filtered.append(job)
+        except Exception as e:
+            print(f"    Apple detail fetch error ({job['id']}): {e}")
+            filtered.append(job)   # include on error — better to over-notify than miss
+
+    return filtered
+
+
+def fetch_deloitte_jobs():
+    all_jobs, seen_ids = [], set()
+
+    for startrow in range(0, 300, 25):
+        try:
+            jobs = parse_deloitte_jobs(_get(f'{config.DELOITTE_URL}&startrow={startrow}'))
+            if not jobs:
+                break
+            for job in jobs:
+                if job['id'] not in seen_ids:
+                    seen_ids.add(job['id'])
+                    all_jobs.append(job)
+            if len(jobs) < 25:
+                break
+        except Exception as e:
+            print(f"    Deloitte startrow {startrow} error: {e}")
+            break
+
+    filtered = []
+    for job in all_jobs:
+        try:
+            detail_html = _get(job['url'])
+            description = parse_deloitte_job_detail(detail_html)
+            if is_entry_level_experience(description):
+                filtered.append(job)
+        except Exception as e:
+            print(f"    Deloitte detail fetch error ({job['id']}): {e}")
+            filtered.append(job)   # include on error
+
+    return filtered
+
+
 def fetch_microsoft_jobs():
     session = requests.Session()
     # Step 1: load the page to obtain the CSRF token and session cookies
@@ -182,11 +247,8 @@ def fetch_all_jobs():
     sources = [
         ("Google",     lambda: fetch_all_pages(config.GOOGLE_URL, parse_google_jobs)),
         ("ServiceNow", lambda: parse_servicenow_jobs(_get(config.SERVICENOW_URL))),
-        ("Apple",      lambda: fetch_all_pages(config.APPLE_URL, parse_apple_jobs)),
-        ("Deloitte",   lambda: fetch_all_pages(
-            config.DELOITTE_URL, parse_deloitte_jobs,
-            page_param="startrow", page_start=0, page_step=25,
-        )),
+        ("Apple",      fetch_apple_jobs),
+        ("Deloitte",   fetch_deloitte_jobs),
         ("IBM",        fetch_ibm_jobs),
         ("Amazon",     fetch_amazon_jobs),
         ("Microsoft",  fetch_microsoft_jobs),

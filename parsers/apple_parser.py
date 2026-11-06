@@ -5,6 +5,9 @@ TITLE_RE    = re.compile(r'\\"postingTitle\\":\\"([^"\\\\]+)\\"')
 SLUG_RE     = re.compile(r'\\"transformedPostingTitle\\":\\"([^"\\\\]+)\\"')
 LOC_NAME_RE = re.compile(r'\\"name\\":\\"([^"\\\\]+)\\",\\"countryID\\":\\"iso-country-IND\\"')
 
+# minimumQualifications lives inside the hydration JSON blob on the detail page
+_MIN_Q_RE = re.compile(r'"minimumQualifications":"((?:[^"\\]|\\[\s\S])*)"')
+
 
 def _unescape(s):
     return re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m.group(1), 16)), s)
@@ -44,3 +47,14 @@ def parse_apple_jobs(html):
         })
 
     return jobs
+
+
+def parse_apple_job_detail(html):
+    """Extract minimumQualifications text from an Apple job detail page."""
+    m = _MIN_Q_RE.search(html)
+    if not m:
+        return ''
+    # The value is a JSON-escaped string: \\n → \n, \\" → "
+    raw = m.group(1)
+    raw = raw.replace('\\n', '\n').replace('\\"', '"').replace('\\\\', '\\')
+    return raw

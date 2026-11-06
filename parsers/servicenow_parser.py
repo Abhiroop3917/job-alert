@@ -1,11 +1,13 @@
 import re
+from parsers.experience import is_entry_level_experience
 
-JOB_BLOCK_RE = re.compile(r'<job>([\s\S]*?)</job>')
-TITLE_RE     = re.compile(r'<title><!\[CDATA\[([\s\S]*?)\]\]></title>',      re.IGNORECASE)
-ID_RE        = re.compile(r'<apijobid><!\[CDATA\[([\s\S]*?)\]\]></apijobid>', re.IGNORECASE)
-URL_RE       = re.compile(r'<url><!\[CDATA\[([\s\S]*?)\]\]></url>',          re.IGNORECASE)
-CITY_RE      = re.compile(r'<city><!\[CDATA\[([\s\S]*?)\]\]></city>',        re.IGNORECASE)
-COUNTRY_RE   = re.compile(r'<country><!\[CDATA\[([\s\S]*?)\]\]></country>',  re.IGNORECASE)
+JOB_BLOCK_RE    = re.compile(r'<job>([\s\S]*?)</job>')
+TITLE_RE        = re.compile(r'<title><!\[CDATA\[([\s\S]*?)\]\]></title>',            re.IGNORECASE)
+ID_RE           = re.compile(r'<apijobid><!\[CDATA\[([\s\S]*?)\]\]></apijobid>',      re.IGNORECASE)
+URL_RE          = re.compile(r'<url><!\[CDATA\[([\s\S]*?)\]\]></url>',                re.IGNORECASE)
+CITY_RE         = re.compile(r'<city><!\[CDATA\[([\s\S]*?)\]\]></city>',              re.IGNORECASE)
+COUNTRY_RE      = re.compile(r'<country><!\[CDATA\[([\s\S]*?)\]\]></country>',        re.IGNORECASE)
+DESCRIPTION_RE  = re.compile(r'<description><!\[CDATA\[([\s\S]*?)\]\]></description>', re.IGNORECASE)
 
 
 def parse_servicenow_jobs(xml):
@@ -29,6 +31,11 @@ def parse_servicenow_jobs(xml):
 
         title_m = TITLE_RE.search(block)
         if not title_m:
+            continue
+
+        desc_m = DESCRIPTION_RE.search(block)
+        description = desc_m.group(1) if desc_m else ''
+        if not is_entry_level_experience(description):
             continue
 
         url_m  = URL_RE.search(block)

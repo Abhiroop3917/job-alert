@@ -38,3 +38,9 @@ def parse_deloitte_jobs(html):
         })
 
     return jobs
+
+
+def parse_deloitte_job_detail(html):
+    """Extract the full plain-text job description from a Deloitte detail page."""
+    text = re.sub(r'<[^>]+>', ' ', html)
+    return re.sub(r'\s+', ' ', text)
