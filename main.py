@@ -211,7 +211,8 @@ def fetch_deloitte_jobs():
     return filtered
 
 
-def fetch_microsoft_jobs():    session = requests.Session()
+def fetch_microsoft_jobs():
+    session = requests.Session()
     # Step 1: load the page to obtain the CSRF token and session cookies
     r = session.get(config.MICROSOFT_URL, headers=HEADERS, timeout=TIMEOUT)
     csrf = r.headers.get('x-csrf-token', '')
