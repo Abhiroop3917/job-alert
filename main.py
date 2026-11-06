@@ -18,6 +18,7 @@ from parsers.apple_parser import parse_apple_jobs
 from parsers.deloitte_parser import parse_deloitte_jobs
 from parsers.ibm_parser import parse_ibm_jobs
 from parsers.amazon_parser import parse_amazon_jobs
+from parsers.microsoft_parser import parse_microsoft_jobs
 
 SEEN_FILE     = Path("seen_jobs.json")
 BULK_THRESHOLD = 20   # if more new jobs than this, only notify a preview
@@ -144,6 +145,39 @@ def fetch_amazon_jobs():
     return all_jobs
 
 
+def fetch_microsoft_jobs():
+    session = requests.Session()
+    # Step 1: load the page to obtain the CSRF token and session cookies
+    r = session.get(config.MICROSOFT_URL, headers=HEADERS, timeout=TIMEOUT)
+    csrf = r.headers.get('x-csrf-token', '')
+
+    # Step 2: call the JSON search API with the CSRF token
+    api_headers = {
+        **HEADERS,
+        'Accept': 'application/json, text/plain, */*',
+        'X-CSRF-Token': csrf,
+        'X-Requested-With': 'XMLHttpRequest',
+        'Referer': config.MICROSOFT_URL,
+    }
+    api_resp = session.get(
+        'https://apply.careers.microsoft.com/api/pcsx/search',
+        params={
+            'domain': 'microsoft.com',
+            'query': '',
+            'location': 'India',
+            'start': '0',
+            'num_rec': '100',
+            'sort_by': 'recent',
+            'filter_include_remote': '1',
+            'filter_seniority': 'Entry',
+        },
+        headers=api_headers,
+        timeout=TIMEOUT,
+    )
+    api_resp.raise_for_status()
+    return parse_microsoft_jobs(api_resp.json())
+
+
 def fetch_all_jobs():
     sources = [
         ("Google",     lambda: fetch_all_pages(config.GOOGLE_URL, parse_google_jobs)),
@@ -155,6 +189,7 @@ def fetch_all_jobs():
         )),
         ("IBM",        fetch_ibm_jobs),
         ("Amazon",     fetch_amazon_jobs),
+        ("Microsoft",  fetch_microsoft_jobs),
     ]
 
     results = []
