@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        width: 340px;
+        margin: 0;
+        font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #fff;
+        color: #202124;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { background: #202124; color: #e8eaed; }
+        .card { background: #2d2e30 !important; border-color: #3c4043 !important; }
+        input, textarea { background: #2d2e30; color: #e8eaed; border-color: #5f6368; }
+        .muted { color: #9aa0a6 !important; }
+      }
+      header {
+        display: flex; align-items: center; gap: 8px;
+        padding: 12px 14px; background: #1a73e8; color: #fff;
+      }
+      header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+      .dot { width: 9px; height: 9px; border-radius: 50%; background: #34a853; }
+      .dot.paused { background: #fbbc04; }
+      .dot.error { background: #ea4335; }
+      main { padding: 12px 14px; }
+      .card {
+        border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: #f8f9fa;
+      }
+      .row { display: flex; justify-content: space-between; margin: 3px 0; }
+      .muted { color: #5f6368; }
+      .btns { display: flex; gap: 8px; margin-bottom: 10px; }
+      button {
+        flex: 1; padding: 8px 10px; border: none; border-radius: 6px; cursor: pointer;
+        font-size: 13px; font-weight: 500;
+      }
+      .primary { background: #1a73e8; color: #fff; }
+      .secondary { background: #e8eaed; color: #202124; }
+      .primary:disabled { opacity: .6; cursor: default; }
+      .danger { background: #ea4335; color: #fff; }
+      label { display: block; font-weight: 600; margin: 8px 0 3px; font-size: 12px; }
+      input, textarea {
+        width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid #dadce0;
+        border-radius: 6px; font-size: 12px; font-family: inherit;
+      }
+      textarea { resize: vertical; min-height: 44px; }
+      .save { margin-top: 10px; background: #34a853; color: #fff; }
+      details summary { cursor: pointer; font-weight: 600; margin: 4px 0; }
+      .alert { font-size: 12px; padding: 4px 0; border-top: 1px solid #eee; }
+      .alert a { color: #1a73e8; text-decoration: none; }
+      #toast { font-size: 12px; min-height: 16px; color: #1a73e8; margin-top: 6px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span id="statusDot" class="dot"></span>
+      <h1>Tech Jobs India Alert</h1>
+    </header>
+    <main>
+      <div class="card">
+        <div class="row"><span class="muted">Status</span><span id="statusText">—</span></div>
+        <div class="row"><span class="muted">Last check</span><span id="lastCheck">—</span></div>
+        <div class="row"><span class="muted">Total detected</span><span id="detected">0</span></div>
+        <div class="row" id="errorRow" style="display:none"><span class="muted">Error</span><span id="errorText"></span></div>
+      </div>
+
+      <div class="btns">
+        <button id="checkNow" class="primary">Check now</button>
+        <button id="togglePause" class="secondary">Pause</button>
+      </div>
+      <div class="btns">
+        <button id="testAlert" class="secondary">Test alert</button>
+        <button id="reset" class="danger">Reset</button>
+      </div>
+      <div id="toast"></div>
+
+      <details id="recentWrap">
+        <summary>Recent alerts (<span id="recentCount">0</span>)</summary>
+        <div id="recentList"></div>
+      </details>
+
+      <details>
+        <summary>Settings</summary>
+        <label>Google Careers URL</label>
+        <input id="searchUrl" type="text" />
+        <label>ServiceNow Careers URL</label>
+        <input id="serviceNowUrl" type="text" />
+        <label>Apple Jobs URL</label>
+        <input id="appleUrl" type="text" />
+        <label>Deloitte South Asia URL</label>
+        <input id="deloitteUrl" type="text" />
+        <label style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:12px;margin:8px 0 3px">
+          <input id="ibmEnabled" type="checkbox" style="width:auto;margin:0" />
+          IBM India Entry Level jobs
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:12px;margin:8px 0 3px">
+          <input id="microsoftEnabled" type="checkbox" style="width:auto;margin:0" />
+          Microsoft India Entry Level jobs
+        </label>
+        <label>Amazon Jobs URL</label>
+        <input id="amazonUrl" type="text" />
+        <label>Check interval (minutes, min 1)</label>
+        <input id="interval" type="number" min="1" />
+        <button id="save" class="save">Save settings</button>
+      </details>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

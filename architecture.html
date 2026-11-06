@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Tech Jobs India Alert — Architecture</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 32px 24px;
+      min-height: 100vh;
+    }
+    h1 {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 32px;
+      color: #e6edf3;
+    }
+    .systems {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .system {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .system-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #30363d;
+    }
+    .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .node {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 10px 16px;
+      text-align: center;
+      width: 100%;
+    }
+    .node .label { font-size: 13px; font-weight: 600; color: #e6edf3; }
+    .node .sub   { font-size: 11px; color: #8b949e; margin-top: 3px; }
+
+    .node.trigger  { background: #0d2a5e; border-color: #1f6feb; }
+    .node.trigger .label { color: #79c0ff; }
+
+    .node.orch     { background: #1c2a1c; border-color: #2ea043; }
+    .node.orch .label { color: #56d364; }
+
+    .node.cfg      { background: #1c1c2a; border-color: #6e40c9; }
+    .node.cfg .label { color: #bc8cff; }
+
+    .node.exp      { background: #1c2a1c; border-color: #2ea043; border-style: dashed; }
+    .node.exp .label { color: #56d364; }
+
+    .node.filter   { background: #1c2a1c; border-color: #2ea043; }
+    .node.filter .label { color: #56d364; }
+
+    .node.state    { background: #2a1c0d; border-color: #d29922; }
+    .node.state .label { color: #e3b341; }
+
+    .node.notif    { background: #2a0d0d; border-color: #da3633; }
+    .node.notif .label { color: #ff7b72; }
+
+    .node.ui       { background: #1c1c2a; border-color: #6e40c9; }
+    .node.ui .label { color: #bc8cff; }
+
+    .row { display: flex; gap: 8px; width: 100%; }
+    .row .node { flex: 1; }
+
+    .arrow { color: #484f58; font-size: 18px; line-height: 1; padding: 4px 0; }
+
+    .parsers-group {
+      width: 100%;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .parsers-group-title {
+      font-size: 10px;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .parsers {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .parser {
+      background: #0d2a5e;
+      border: 1px solid #1f6feb33;
+      border-radius: 6px;
+      padding: 6px 3px;
+      text-align: center;
+    }
+    .parser .name { font-size: 10px; font-weight: 600; color: #79c0ff; }
+    .parser .file { font-size: 9px;  color: #8b949e; margin-top: 1px; }
+
+    .parser.xp {
+      background: #0d2a1a;
+      border-color: #2ea04355;
+    }
+    .parser.xp .name { color: #56d364; }
+
+    .outputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8b949e; }
+    .dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<h1>Tech Jobs India Alert — Architecture</h1>
+
+<div class="systems">
+
+  <!-- ── GitHub Actions Backend ── -->
+  <div class="system">
+    <div class="system-title">GitHub Actions Backend</div>
+    <div class="flow">
+
+      <div class="node trigger">
+        <div class="label">⏰ GitHub Cron</div>
+        <div class="sub">every 5 minutes · workflow_dispatch</div>
+      </div>
+
+      <div class="arrow">↓</div>
+
+      <div class="row">
+        <div class="node orch">
+          <div class="label">main.py</div>
+          <div class="sub">fetch → filter → notify</div>
+        </div>
+        <div class="node cfg">
+          <div class="label">config.py</div>
+          <div class="sub">URLs · keywords · secrets</div>
+        </div>
+      </div>
+
+      <div class="arrow">↓</div>
+
+      <div class="parsers-group">
+        <div class="parsers-group-title">7 Job Sources — fetched in sequence</div>
+        <div class="parsers">
+          <div class="parser">
+            <div class="name">Google</div>
+            <div class="file">google_parser</div>
+          </div>
+          <div class="parser xp">
+            <div class="name">ServiceNow</div>
+            <div class="file">servicenow_parser</div>
+          </div>
+          <div class="parser xp">
+            <div class="name">Apple</div>
+            <div class="file">apple_parser</div>
+          </div>
+          <div class="parser xp">
+            <div class="name">Deloitte</div>
+            <div class="file">deloitte_parser</div>
+          </div>
+          <div class="parser">
+            <div class="name">IBM</div>
+            <div class="file">ibm_parser</div>
+          </div>
+          <div class="parser xp">
+            <div class="name">Amazon</div>
+            <div class="file">amazon_parser</div>
+          </div>
+          <div class="parser">
+            <div class="name">Microsoft</div>
+            <div class="file">microsoft_parser</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow">↓</div>
+
+      <div class="node exp">
+        <div class="label">experience.py — Shared Experience Filter</div>
+        <div class="sub">max_years_in_text() · is_entry_level_experience() · keeps 0–2 yr jobs</div>
+      </div>
+
+      <div class="arrow">↓</div>
+
+      <div class="node filter">
+        <div class="label">apply_filters()</div>
+        <div class="sub">config.LOCATIONS · config.KEYWORDS</div>
+      </div>
+
+      <div class="arrow">↓</div>
+
+      <div class="outputs">
+        <div class="node state">
+          <div class="label">seen_jobs.json</div>
+          <div class="sub">committed to Git</div>
+        </div>
+        <div class="node notif">
+          <div class="label">ntfy.sh</div>
+          <div class="sub">push per job</div>
+        </div>
+        <div class="node notif">
+          <div class="label">Gmail</div>
+          <div class="sub">email digest</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Chrome Extension ── -->
+  <div class="system">
+    <div class="system-title">Chrome Extension (Local)</div>
+    <div class="flow">
+
+      <div class="node trigger">
+        <div class="label">⏰ chrome.alarms</div>
+        <div class="sub">configurable interval · manual check via popup</div>
+      </div>
+
+      <div class="arrow">↓</div>
+
+      <div class="row">
+        <div class="node orch">
+          <div class="label">background.js</div>
+          <div class="sub">service worker · fetch → filter → notify</div>
+        </div>
+        <div class="node cfg">
+          <div class="label">storage.js</div>
+          <div class="sub">chrome.storage.local · seen IDs · config</div>
+        </div>
+      </div>
+
+      <div class="arrow">↓</div>
+
+      <div class="parsers-group">
+        <div class="parsers-group-title">7 Job Sources — fetched in parallel (Promise.allSettled)</div>
+        <div class="parsers">
+          <div class="parser">
+            <div class="name">Google</div>
+            <div class="file">jobParser</div>
+          </div>
+          <div class="parser xp">
+            <div class="name">ServiceNow</div>
+            <div class="file">serviceNowParser</div>
+          </div>
+          <div class="parser xp">
+            <div class="name">Apple</div>
+            <div class="file">appleParser</div>
+          </div>
+          <div class="parser xp">
+            <div class="name">Deloitte</div>
+            <div class="file">deloitteParser</div>
+          </div>
+          <div class="parser">
+            <div class="name">IBM</div>
+            <div class="file">ibmParser</div>
+          </div>
+          <div class="parser xp">
+            <div class="name">Amazon</div>
+            <div class="file">amazonParser</div>
+          </div>
+          <div class="parser">
+            <div class="name">Microsoft</div>
+            <div class="file">microsoftParser</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow">↓</div>
+
+      <div class="node exp">
+        <div class="label">experienceFilter.js — Shared Experience Filter</div>
+        <div class="sub">maxYearsInText() · isEntryLevelExperience() · keeps 0–2 yr jobs</div>
+      </div>
+
+      <div class="arrow">↓</div>
+
+      <div class="node filter">
+        <div class="label">filters.js — applyFilters()</div>
+        <div class="sub">location · keywords (from chrome.storage config)</div>
+      </div>
+
+      <div class="arrow">↓</div>
+
+      <div class="outputs">
+        <div class="node state">
+          <div class="label">chrome.storage</div>
+          <div class="sub">seen IDs persist</div>
+        </div>
+        <div class="node notif">
+          <div class="label">notifications.js</div>
+          <div class="sub">desktop notification</div>
+        </div>
+        <div class="node ui">
+          <div class="label">popup.html</div>
+          <div class="sub">status · manual check</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="dot" style="background:#1f6feb"></div>Trigger</div>
+  <div class="legend-item"><div class="dot" style="background:#2ea043"></div>Orchestrator / Filter</div>
+  <div class="legend-item"><div class="dot" style="background:#1f6feb88"></div>Parser (no exp. filter)</div>
+  <div class="legend-item"><div class="dot" style="background:#2ea04366"></div>Parser + Experience Filter</div>
+  <div class="legend-item"><div class="dot" style="background:#d29922"></div>State / Persistence</div>
+  <div class="legend-item"><div class="dot" style="background:#da3633"></div>Notification</div>
+  <div class="legend-item"><div class="dot" style="background:#6e40c9"></div>Config / UI</div>
+</div>
+
+</body>
+</html>
