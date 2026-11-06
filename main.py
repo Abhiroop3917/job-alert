@@ -247,6 +247,10 @@ def fetch_microsoft_jobs():
 def fetch_meta_jobs():
     import json as _json
 
+    # Use a session to preserve the cookies set on the page GET for the GraphQL POST —
+    # Meta's lsd CSRF token is validated against the session cookie.
+    meta_session = requests.Session()
+
     # Step 1: load the Meta page with browser-like headers to extract session tokens
     meta_page_headers = {
         **HEADERS,
@@ -255,7 +259,9 @@ def fetch_meta_jobs():
         'sec-fetch-mode': 'navigate',
         'sec-fetch-site': 'none',
     }
-    page_html = requests.get(config.META_PAGE_URL, headers=meta_page_headers, timeout=TIMEOUT).text
+    r = meta_session.get(config.META_PAGE_URL, headers=meta_page_headers, timeout=TIMEOUT)
+    r.raise_for_status()
+    page_html = r.text
 
     lsd_m    = re.search(r'"LSD",\[\],\{"token":"([^"]+)"', page_html)
     spin_r_m = re.search(r'"__spin_r":(\d+)', page_html)
@@ -268,8 +274,8 @@ def fetch_meta_jobs():
     spin_r = spin_r_m.group(1)
     spin_t = spin_t_m.group(1)
 
-    # Step 2: call the Meta GraphQL search API
-    api_resp = requests.post(
+    # Step 2: call the Meta GraphQL search API (same session carries the cookies)
+    api_resp = meta_session.post(
         META_GRAPHQL_URL,
         data={
             'av': '0',
@@ -291,6 +297,9 @@ def fetch_meta_jobs():
             'Content-Type': 'application/x-www-form-urlencoded',
             'Origin': 'https://www.metacareers.com',
             'Referer': 'https://www.metacareers.com/jobsearch/',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
         },
         timeout=TIMEOUT,
     )
