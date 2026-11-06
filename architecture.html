@@ -104,7 +104,7 @@
     }
     .parsers {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 4px;
     }
     .parser {
@@ -168,7 +168,7 @@
       <div class="arrow">↓</div>
 
       <div class="parsers-group">
-        <div class="parsers-group-title">7 Job Sources — fetched in sequence</div>
+        <div class="parsers-group-title">8 Job Sources — fetched in sequence</div>
         <div class="parsers">
           <div class="parser">
             <div class="name">Google</div>
@@ -197,6 +197,10 @@
           <div class="parser">
             <div class="name">Microsoft</div>
             <div class="file">microsoft_parser</div>
+          </div>
+          <div class="parser xp">
+            <div class="name">Meta</div>
+            <div class="file">meta_parser</div>
           </div>
         </div>
       </div>
@@ -261,7 +265,7 @@
       <div class="arrow">↓</div>
 
       <div class="parsers-group">
-        <div class="parsers-group-title">7 Job Sources — fetched in parallel (Promise.allSettled)</div>
+        <div class="parsers-group-title">8 Job Sources — fetched in parallel (Promise.allSettled)</div>
         <div class="parsers">
           <div class="parser">
             <div class="name">Google</div>
@@ -290,6 +294,10 @@
           <div class="parser">
             <div class="name">Microsoft</div>
             <div class="file">microsoftParser</div>
+          </div>
+          <div class="parser xp">
+            <div class="name">Meta</div>
+            <div class="file">metaParser</div>
           </div>
         </div>
       </div>

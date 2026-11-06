@@ -1,6 +1,6 @@
 # Tech Jobs India Alert
 
-Monitors 7 company career portals for entry-level tech jobs in India and sends real-time notifications. Two delivery modes — a GitHub Actions backend and a Chrome extension — both run independently.
+Monitors 8 company career portals for entry-level tech jobs in India and sends real-time notifications. Two delivery modes — a GitHub Actions backend and a Chrome extension — both run independently.
 
 ---
 
@@ -17,6 +17,7 @@ Every run fetches jobs from all 7 sources, filters for 0–2 year experience bas
 | ServiceNow | RSS description year filter |
 | Apple | Detail page `minimumQualifications` year filter |
 | Deloitte | Detail page full text year filter |
+| Meta | Detail page `qualifications` year filter |
 
 **Experience filter rule:** scan description text for `N years` patterns. Keep the job if the highest number found is 0 (no explicit requirement) or ≤ 2.
 
@@ -100,7 +101,8 @@ job-alert/
 │   ├── deloitte_parser.py
 │   ├── ibm_parser.py
 │   ├── amazon_parser.py
-│   └── microsoft_parser.py
+│   ├── microsoft_parser.py
+│   └── meta_parser.py
 ├── tests/                   # pytest test suite
 └── extension/               # Chrome extension (MV3)
     ├── manifest.json

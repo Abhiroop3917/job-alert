@@ -2,9 +2,9 @@
   "manifest_version": 3,
   "name": "Tech Jobs India Alert",
   "version": "1.0.0",
-  "description": "Monitors Google, Amazon, Microsoft, Apple, IBM, ServiceNow, and Deloitte careers and sends desktop notifications for new entry-level jobs in India.",
+  "description": "Monitors Google, Amazon, Microsoft, Apple, IBM, ServiceNow, Deloitte, and Meta careers and sends desktop notifications for new entry-level jobs in India.",
   "permissions": ["alarms", "storage", "notifications"],
-  "host_permissions": ["https://www.google.com/*", "https://careers.servicenow.com/*", "https://jobs.apple.com/*", "https://southasiacareers.deloitte.com/*", "https://www-api.ibm.com/*", "https://amazon.jobs/*", "https://apply.careers.microsoft.com/*"],
+  "host_permissions": ["https://www.google.com/*", "https://careers.servicenow.com/*", "https://jobs.apple.com/*", "https://southasiacareers.deloitte.com/*", "https://www-api.ibm.com/*", "https://amazon.jobs/*", "https://apply.careers.microsoft.com/*", "https://www.metacareers.com/*"],
   "background": {
     "service_worker": "background.js",
     "type": "module"

@@ -31,3 +31,9 @@ AMAZON_URL    = (
     "&category[]=project-program-product-management-technical&category[]=business-intelligence"
     "&industry_experience=less_than_1_year&country=IND"
 )
+META_PAGE_URL = (
+    "https://www.metacareers.com/jobsearch/?sort_by_new=true"
+    "&offices[0]=Mumbai%2C%20India&offices[1]=Gurgaon%2C%20India"
+    "&offices[2]=Bangalore%2C%20India&offices[3]=Hyderabad%2C%20India"
+    "&offices[4]=New%20Delhi%2C%20India&roles[0]=Full%20time%20employment"
+)

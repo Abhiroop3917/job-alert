@@ -8,6 +8,7 @@ import { parseDeloitteJobs } from "./deloitteParser.js";
 import { parseIBMJobs } from "./ibmParser.js";
 import { parseAmazonJobs } from "./amazonParser.js";
 import { parseMicrosoftJobs } from "./microsoftParser.js";
+import { parseMetaJobs, parseMetaJobDetail } from "./metaParser.js";
 import { applyFilters } from "./filters.js";
 import { notifyNewJob, registerNotificationClickHandler } from "./notifications.js";
 import { isEntryLevelExperience } from "./experienceFilter.js";
@@ -304,14 +305,112 @@ async function fetchAppleJobs(baseUrl) {
 }
 
 // Fetch Deloitte jobs across pages, then filter each by stripping the detail page and checking years.
-async function fetchDeloitteJobs(baseUrl) {
-  const allJobs = await fetchAllPages(baseUrl, parseDeloitteJobs, { pageParam: "startrow", pageStart: 0, pageStep: 25 });
+async function fetchDeloitteJobs(baseUrl) {  const allJobs = await fetchAllPages(baseUrl, parseDeloitteJobs, { pageParam: "startrow", pageStart: 0, pageStep: 25 });
   const checks = await Promise.all(
     allJobs.map(async (job) => {
       try {
         const detailHtml = await fetchResultsHtml(job.url);
         const description = detailHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
         return isEntryLevelExperience(description) ? job : null;
+      } catch (_) {
+        return job; // include on fetch error
+      }
+    })
+  );
+  return checks.filter(Boolean);
+}
+
+// Meta Careers: 2-step flow — extract session tokens from page HTML, POST to GraphQL,
+// then filter each job by the qualifications text on its detail page.
+const META_PAGE_URL    = "https://www.metacareers.com/jobsearch/?sort_by_new=true&offices[0]=Mumbai%2C%20India&offices[1]=Gurgaon%2C%20India&offices[2]=Bangalore%2C%20India&offices[3]=Hyderabad%2C%20India&offices[4]=New%20Delhi%2C%20India&roles[0]=Full%20time%20employment";
+const META_GRAPHQL_URL = "https://www.metacareers.com/graphql";
+const META_DOC_ID      = "27129360303422352";
+const META_VARIABLES   = {
+  search_input: {
+    q: null, divisions: [],
+    offices: ["Mumbai, India", "Gurgaon, India", "Bangalore, India", "Hyderabad, India", "New Delhi, India"],
+    roles: ["Full time employment"],
+    leadership_levels: [], saved_jobs: [], saved_searches: [], sub_teams: [], teams: [],
+    is_leadership: false, is_remote_only: false, sort_by_new: true, results_per_page: null,
+  },
+  viewasUserID: null,
+  isLoggedIn: false,
+};
+
+async function fetchMetaJobs() {
+  // Step 1: load the page with a browser-like Accept header to get the token blob
+  const ctrl1 = new AbortController();
+  const t1 = setTimeout(() => ctrl1.abort(), 30_000);
+  let pageHtml;
+  try {
+    const res = await fetch(META_PAGE_URL, {
+      credentials: "omit",
+      headers: {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      signal: ctrl1.signal,
+    });
+    clearTimeout(t1);
+    if (!res.ok) throw new Error(`Meta page HTTP ${res.status}`);
+    pageHtml = await res.text();
+  } catch (err) {
+    clearTimeout(t1);
+    throw err;
+  }
+
+  const lsdM    = pageHtml.match(/"LSD",\[\],\{"token":"([^"]+)"/);
+  const spinRM  = pageHtml.match(/"__spin_r":(\d+)/);
+  const spinTM  = pageHtml.match(/"__spin_t":(\d+)/);
+  if (!lsdM || !spinRM || !spinTM) throw new Error("Meta: could not extract session tokens");
+
+  const lsd    = lsdM[1];
+  const spinR  = spinRM[1];
+  const spinT  = spinTM[1];
+
+  // Step 2: POST to the Meta GraphQL search API
+  const body = new URLSearchParams({
+    av: "0", __user: "0", __a: "1",
+    lsd, __rev: spinR, __spin_r: spinR, __spin_b: "trunk", __spin_t: spinT,
+    fb_api_caller_class: "RelayModern",
+    fb_api_req_friendly_name: "CareersJobSearchResultsV2DataQuery",
+    server_timestamps: "true",
+    variables: JSON.stringify(META_VARIABLES),
+    doc_id: META_DOC_ID,
+  });
+
+  const ctrl2 = new AbortController();
+  const t2 = setTimeout(() => ctrl2.abort(), 30_000);
+  let data;
+  try {
+    const res = await fetch(META_GRAPHQL_URL, {
+      method: "POST",
+      credentials: "omit",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Origin": "https://www.metacareers.com",
+        "Referer": "https://www.metacareers.com/jobsearch/",
+      },
+      body: body.toString(),
+      signal: ctrl2.signal,
+    });
+    clearTimeout(t2);
+    if (!res.ok) throw new Error(`Meta GraphQL HTTP ${res.status}`);
+    data = await res.json();
+  } catch (err) {
+    clearTimeout(t2);
+    throw err;
+  }
+
+  const allJobs = parseMetaJobs(data);
+
+  // Step 3: filter each job by the qualifications on its detail page, in parallel
+  const checks = await Promise.all(
+    allJobs.map(async (job) => {
+      try {
+        const detailHtml = await fetchResultsHtml(job.url);
+        const qualifications = parseMetaJobDetail(detailHtml);
+        return isEntryLevelExperience(qualifications) ? job : null;
       } catch (_) {
         return job; // include on fetch error
       }
@@ -330,6 +429,7 @@ async function fetchAllJobs(config) {
   if (config.ibmEnabled)    sources.push(fetchIBMJobs());
   if (config.amazonUrl)     sources.push(fetchAmazonJobs(config.amazonUrl));
   if (config.microsoftEnabled !== false) sources.push(fetchMicrosoftJobs());
+  if (config.metaEnabled !== false) sources.push(fetchMetaJobs());
   const results = await Promise.allSettled(sources);
   return results
     .filter((r) => r.status === "fulfilled")

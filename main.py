@@ -20,6 +20,7 @@ from parsers.experience import is_entry_level_experience
 from parsers.ibm_parser import parse_ibm_jobs
 from parsers.amazon_parser import parse_amazon_jobs
 from parsers.microsoft_parser import parse_microsoft_jobs
+from parsers.meta_parser import parse_meta_jobs, parse_meta_job_detail, META_VARIABLES, META_GRAPHQL_URL, META_DOC_ID
 
 SEEN_FILE     = Path("seen_jobs.json")
 BULK_THRESHOLD = 20   # if more new jobs than this, only notify a preview
@@ -210,8 +211,7 @@ def fetch_deloitte_jobs():
     return filtered
 
 
-def fetch_microsoft_jobs():
-    session = requests.Session()
+def fetch_microsoft_jobs():    session = requests.Session()
     # Step 1: load the page to obtain the CSRF token and session cookies
     r = session.get(config.MICROSOFT_URL, headers=HEADERS, timeout=TIMEOUT)
     csrf = r.headers.get('x-csrf-token', '')
@@ -243,6 +243,74 @@ def fetch_microsoft_jobs():
     return parse_microsoft_jobs(api_resp.json())
 
 
+def fetch_meta_jobs():
+    import json as _json
+
+    # Step 1: load the Meta page with browser-like headers to extract session tokens
+    meta_page_headers = {
+        **HEADERS,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'none',
+    }
+    page_html = requests.get(config.META_PAGE_URL, headers=meta_page_headers, timeout=TIMEOUT).text
+
+    lsd_m    = re.search(r'"LSD",\[\],\{"token":"([^"]+)"', page_html)
+    spin_r_m = re.search(r'"__spin_r":(\d+)', page_html)
+    spin_t_m = re.search(r'"__spin_t":(\d+)', page_html)
+
+    if not (lsd_m and spin_r_m and spin_t_m):
+        raise ValueError("Meta: could not extract session tokens from page")
+
+    lsd    = lsd_m.group(1)
+    spin_r = spin_r_m.group(1)
+    spin_t = spin_t_m.group(1)
+
+    # Step 2: call the Meta GraphQL search API
+    api_resp = requests.post(
+        META_GRAPHQL_URL,
+        data={
+            'av': '0',
+            '__user': '0',
+            '__a': '1',
+            'lsd': lsd,
+            '__rev': spin_r,
+            '__spin_r': spin_r,
+            '__spin_b': 'trunk',
+            '__spin_t': spin_t,
+            'fb_api_caller_class': 'RelayModern',
+            'fb_api_req_friendly_name': 'CareersJobSearchResultsV2DataQuery',
+            'server_timestamps': 'true',
+            'variables': _json.dumps(META_VARIABLES),
+            'doc_id': META_DOC_ID,
+        },
+        headers={
+            **HEADERS,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Origin': 'https://www.metacareers.com',
+            'Referer': 'https://www.metacareers.com/jobsearch/',
+        },
+        timeout=TIMEOUT,
+    )
+    api_resp.raise_for_status()
+    all_jobs = parse_meta_jobs(api_resp.json())
+
+    # Step 3: filter each job using its detail page qualifications text
+    filtered = []
+    for job in all_jobs:
+        try:
+            detail_html = _get(job['url'])
+            qualifications = parse_meta_job_detail(detail_html)
+            if is_entry_level_experience(qualifications):
+                filtered.append(job)
+        except Exception as e:
+            print(f"    Meta detail fetch error ({job['id']}): {e}")
+            filtered.append(job)  # include on error — better to over-notify than miss
+
+    return filtered
+
+
 def fetch_all_jobs():
     sources = [
         ("Google",     lambda: fetch_all_pages(config.GOOGLE_URL, parse_google_jobs)),
@@ -252,6 +320,7 @@ def fetch_all_jobs():
         ("IBM",        fetch_ibm_jobs),
         ("Amazon",     fetch_amazon_jobs),
         ("Microsoft",  fetch_microsoft_jobs),
+        ("Meta",       fetch_meta_jobs),
     ]
 
     results = []
