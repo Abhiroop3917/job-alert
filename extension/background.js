@@ -9,6 +9,7 @@ import { parseIBMJobs } from "./ibmParser.js";
 import { parseAmazonJobs } from "./amazonParser.js";
 import { parseMicrosoftJobs } from "./microsoftParser.js";
 import { parseMetaJobs, parseMetaJobDetail } from "./metaParser.js";
+import { parseNvidiaJobs, parseNvidiaJobDetail } from "./nvidiaParser.js";
 import { applyFilters } from "./filters.js";
 import { notifyNewJob, registerNotificationClickHandler } from "./notifications.js";
 import { isEntryLevelExperience } from "./experienceFilter.js";
@@ -419,6 +420,62 @@ async function fetchMetaJobs() {
   return checks.filter(Boolean);
 }
 
+// NVIDIA Careers uses the same Eightfold pcsx platform as Microsoft (no CSRF needed).
+// Step 1: paginate the search API (start=0,100,200,...) to collect all jobs.
+// Step 2: fetch each position's detail page in parallel to get jobDescription HTML
+//         and filter out roles requiring 3+ years of experience.
+const NVIDIA_API_BASE = "https://jobs.nvidia.com/api/pcsx/search?domain=nvidia.com&query=&location=India&num_rec=100&sort_by=timestamp&filter_include_remote=1&filter_job_category=engineering&filter_job_type=regular+employee&filter_time_type=full+time";
+const NVIDIA_DETAIL_BASE = "https://jobs.nvidia.com/api/pcsx/position_details";
+
+async function fetchNvidiaJobs(timeoutMs = 30_000) {
+  const allJobs = [];
+  const seenIds = new Set();
+
+  for (let start = 0; start < 1000; start += 100) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(`${NVIDIA_API_BASE}&start=${start}`, {
+        credentials: "omit",
+        headers: { "Accept": "application/json" },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`NVIDIA API HTTP ${res.status}`);
+      const data = await res.json();
+      const jobs = parseNvidiaJobs(data);
+      if (jobs.length === 0) break;
+      for (const job of jobs) {
+        if (!seenIds.has(job.id)) { seenIds.add(job.id); allJobs.push(job); }
+      }
+      if (jobs.length < 100) break;
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
+  }
+
+  // Filter each job by its description in parallel
+  const checks = await Promise.all(
+    allJobs.map(async (job) => {
+      try {
+        const posId = job.url.split("/").pop();
+        const detailRes = await fetch(
+          `${NVIDIA_DETAIL_BASE}?position_id=${posId}&domain=nvidia.com&hl=en`,
+          { credentials: "omit", headers: { "Accept": "application/json" } }
+        );
+        if (!detailRes.ok) return job;
+        const detail = await detailRes.json();
+        const description = parseNvidiaJobDetail(detail);
+        return isEntryLevelExperience(description) ? job : null;
+      } catch (_) {
+        return job; // include on fetch error
+      }
+    })
+  );
+  return checks.filter(Boolean);
+}
+
 // Fetch all jobs from every enabled source in parallel.
 // Uses allSettled so a slow/failing source never blocks or breaks the others.
 async function fetchAllJobs(config) {
@@ -430,6 +487,7 @@ async function fetchAllJobs(config) {
   if (config.amazonUrl)     sources.push(fetchAmazonJobs(config.amazonUrl));
   if (config.microsoftEnabled !== false) sources.push(fetchMicrosoftJobs());
   if (config.metaEnabled !== false) sources.push(fetchMetaJobs());
+  if (config.nvidiaEnabled !== false) sources.push(fetchNvidiaJobs());
   const results = await Promise.allSettled(sources);
   return results
     .filter((r) => r.status === "fulfilled")

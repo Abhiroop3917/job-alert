@@ -22,6 +22,7 @@ from parsers.ibm_parser import parse_ibm_jobs
 from parsers.amazon_parser import parse_amazon_jobs
 from parsers.microsoft_parser import parse_microsoft_jobs
 from parsers.meta_parser import parse_meta_jobs, parse_meta_job_detail, META_VARIABLES, META_GRAPHQL_URL, META_DOC_ID
+from parsers.nvidia_parser import parse_nvidia_jobs, parse_nvidia_job_detail
 
 SEEN_FILE     = Path("seen_jobs.json")
 BULK_THRESHOLD = 20   # if more new jobs than this, only notify a preview
@@ -313,6 +314,51 @@ def fetch_meta_jobs():
         return [j for j in ex.map(_check, all_jobs) if j]
 
 
+def fetch_nvidia_jobs():
+    """Fetch NVIDIA engineering jobs in India, paginating via start=0,100,200,...
+
+    The search API does not include job descriptions, so each job's detail page
+    is fetched in parallel to extract jobDescription HTML for experience filtering.
+    """
+    import json as _json
+    all_jobs, seen_ids = [], set()
+    base = config.NVIDIA_URL.replace('&start=0', '')
+    sep  = '&' if '?' in base else '?'
+
+    for start in range(0, 1000, 100):
+        try:
+            data = _json.loads(_get(f'{base}{sep}start={start}'))
+            jobs = parse_nvidia_jobs(data)
+            if not jobs:
+                break
+            for job in jobs:
+                if job['id'] not in seen_ids:
+                    seen_ids.add(job['id'])
+                    all_jobs.append(job)
+            if len(jobs) < 100:
+                break
+        except Exception as e:
+            print(f"    NVIDIA start={start} error: {e}")
+            break
+
+    def _check(job):
+        try:
+            # Extract the numeric position ID from the job URL path (/careers/job/<id>)
+            pos_id = job['url'].rstrip('/').split('/')[-1]
+            detail_url = (
+                f"https://jobs.nvidia.com/api/pcsx/position_details"
+                f"?position_id={pos_id}&domain=nvidia.com&hl=en"
+            )
+            detail = _json.loads(_get(detail_url))
+            description = parse_nvidia_job_detail(detail)
+            return job if is_entry_level_experience(description) else None
+        except Exception:
+            return job  # include on error
+
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        return [j for j in ex.map(_check, all_jobs) if j]
+
+
 def fetch_all_jobs():
     sources = {
         "Google":     lambda: fetch_all_pages(config.GOOGLE_URL, parse_google_jobs),
@@ -323,6 +369,7 @@ def fetch_all_jobs():
         "Amazon":     fetch_amazon_jobs,
         "Microsoft":  fetch_microsoft_jobs,
         "Meta":       fetch_meta_jobs,
+        "NVIDIA":     fetch_nvidia_jobs,
     }
 
     all_jobs = []

@@ -13,6 +13,7 @@ export const DEFAULTS = {
     ibmEnabled: true,
     microsoftEnabled: true,
     metaEnabled: true,
+    nvidiaEnabled: true,
     amazonUrl: "https://amazon.jobs/en/search.json?result_limit=100&sort=recent&category[]=software-development&category[]=data-science&category[]=fulfillment-warehouse-associate&category[]=machine-learning-science&category[]=systems-quality-security-engineering&category[]=operations-it-support-engineering&category[]=business-merchant-development&category[]=project-program-product-management-technical&category[]=business-intelligence&industry_experience=less_than_1_year&country=IND",
     // Empty keywords => match every job. Case-insensitive substring match on the title.
     keywords: [],

@@ -37,3 +37,10 @@ META_PAGE_URL = (
     "&offices[2]=Bangalore%2C%20India&offices[3]=Hyderabad%2C%20India"
     "&offices[4]=New%20Delhi%2C%20India&roles[0]=Full%20time%20employment"
 )
+NVIDIA_URL = (
+    "https://jobs.nvidia.com/api/pcsx/search"
+    "?domain=nvidia.com&query=&location=India&start=0&num_rec=100"
+    "&sort_by=timestamp&filter_include_remote=1"
+    "&filter_job_category=engineering&filter_job_type=regular+employee"
+    "&filter_time_type=full+time"
+)
